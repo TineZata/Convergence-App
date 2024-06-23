@@ -1,0 +1,4 @@
+[submodule "Convergence"]
+	path = Convergence
+	url = git@github.com:TineZata/Convergence.git
+	branch = 31-hide-complexity-with-channels-access-wrapper
