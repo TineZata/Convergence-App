@@ -1,0 +1,91 @@
+﻿:root {
+  --clf-action-button-active-font-colour: #DDDDDD;
+  --clf-action-button-default-width: 100px;
+  --clf-action-button-default-height: 32px;
+  --clf-action-button-background-colour: #F1F1F1;
+  --clf-action-button-hover-colour: #D3D3D3;
+  --clf-action-button-active-background-colour: #8B8B8B;
+  --clf-action-button-active-outline-width: 1px;
+  --clf-action-button-focus-border-colour: #000000;
+  /* Navigation Button*/
+  --clf-navigation-action-button-default-width: 98px;
+  --clf-navigation-action-button-default-height: 32px;
+  --clf-navigation-action-button-background-colour: #808080;
+  --clf-navigation-action-button-color: #FFFFFF;
+  --clf-navigation-action-button-hover-background-colour: #D3D3D3;
+  --clf-navigation-action-button-active-background-colour: #8B8B8B;
+  --clf-navigation-action-button-focus-border-colour: #8B8B8B;
+}
+
+button {
+  width: max-content;
+  height: var(--clf-action-button-default-height);
+  background-color: var(--clf-action-button-background-colour);
+  color: var(--clf-font-colour);
+  border-radius: var(--clf-border-radius);
+  border: 0px;
+  font-family: var(--clf-font-family);
+  font-style: var(--clf-font-style);
+  font-weight: var(--clf-medium-font-weight);
+  font-size: var(--clf-default-font-size);
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 8px;
+  cursor: pointer;
+}
+
+  button:hover {
+    background-color: var(--clf-action-button-hover-colour);
+  }
+
+  button:focus {
+    outline: var(--clf-action-button-active-outline-width) solid var(--clf-action-button-focus-border-colour);
+  }
+
+  button:active {
+    background-color: var(--clf-action-button-active-background-colour);
+    color: var(--clf-action-button-active-font-colour);
+  }
+
+  button:disabled {
+    pointer-events: none;
+    filter: var(--clf-disabled-filter);
+  }
+
+.clf-button-navigation {
+  background-color: var(--clf-navigation-action-button-background-colour);
+  color: var(--clf-navigation-action-button-color);
+}
+
+  .clf-button-navigation:hover {
+    background-color: var(--clf-navigation-action-button-hover-background-colour);
+    color: var(--clf-font-colour);
+  }
+
+  .clf-button-navigation:active {
+    background-color: var(--clf-action-button-active-background-colour);
+    color: var(--clf-action-button-active-font-colour);
+  }
+
+.clf-button-transparent {
+  background-color: transparent;
+}
+
+  .clf-button-transparent:hover {
+    background-color: var(--clf-action-button-background-colour);
+  }
+
+  .clf-button-transparent:active {
+    background-color: var(--clf-action-button-background-colour);
+    color: var(--clf-font-colour);
+  }
+
+  .clf-button-body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 4px;
+  }
+

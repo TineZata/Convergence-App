@@ -1,0 +1,24 @@
+﻿@inherits LayoutComponentBase
+@using ConvergenceBlazorComponents.Styles
+
+<div class="page">
+    <main>
+        <div class="top-menu">
+            <NavMenu />
+            <div class="theme-menu">
+                <label class="theme-label">Theme: </label>
+                <ThemeChanger IsVisible=true />
+            </div>
+        </div>
+    
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>

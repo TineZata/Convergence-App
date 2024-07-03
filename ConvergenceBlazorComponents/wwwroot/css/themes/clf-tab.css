@@ -1,0 +1,16 @@
+﻿:root {
+  --clf-tab-radius: 6px;
+  --clf-tab-padding: 5px 20px;
+  --clf-tab-content-padding: 10px;
+  --clf-tab-gap: 6px;
+  --clf-tab-offset: 1px;
+  --clf-tab-border-width: 1px;
+  --clf-tab-font-size: var(--clf-h3-font-size);
+  /* Colors */
+  --clf-tab-content-background-colour: var(--clf-tab-active-background-colour);
+  --clf-tab-hover-background-colour: var(--clf-action-button-hover-colour);
+  --clf-tab-colour: var(--clf-font-colour);
+  --clf-tab-background-colour: var(--clf-dashboard-header-background-colour);
+  --clf-tab-active-background-colour: #fafafa;
+  --clf-tab-border-colour: #c3c3c3;
+}
