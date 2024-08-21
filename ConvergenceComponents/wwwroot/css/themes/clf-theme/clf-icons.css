@@ -15,7 +15,7 @@
 Example useage
 
 <svg class="clf-icon medium-size-red-icon">
-  <use xlink:href="_content/Clf.Blazor.Basic.Components/icons/single_colour_sprite.svg#clf_ic_add_24_regular"></use>
+  <use xlink:href="_content/ConvergenceComponents/icons/single_colour_sprite.svg#clf_ic_add_24_regular"></use>
 </svg>
 
 where medium-size-red-icon is a css class
@@ -28,7 +28,7 @@ where medium-size-red-icon is a css class
 Changing size or colour of individual icons
 
 <svg class="clf-icon clf_ic_add_24_regular">
-  <use xlink:href="_content/Clf.Blazor.Basic.Components/icons/single_colour_sprite.svg#clf_ic_add_24_regular"></use>
+  <use xlink:href="_content/ConvergenceComponents/icons/single_colour_sprite.svg#clf_ic_add_24_regular"></use>
 </svg>
 
 .clf_ic_add_24_regular {

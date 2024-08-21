@@ -1,19 +1,17 @@
 ﻿@using Convergence
-@using ConvergenceBlazorComponents.Styles
+@using ConvergenceComponents.Components.Styles
 @using Microsoft.AspNetCore.Components.Web
 @using System.ComponentModel
 @using System.Runtime.InteropServices
 @using System.Threading
-@using Microsoft.JSInterop
 @using CaputCallback = Convergence.IO.EPICS.CA.EventCallbackDelegate.WriteCallback
 @inherits PVWidgetBase
 @implements IDisposable
-@inject IJSRuntime JSRuntime
 
 
 @if (IsVisible)
 {
-	<Alarm BorderStatus="@PVBorderStatus" ContentDisabledTooltip="@(ShowTooltip? TooltipText:string.Empty)" IsContentDisabled="@PVIsDisabled">
+	@* <Alarm BorderStatus="@PVBorderStatus" ContentDisabledTooltip="@(ShowTooltip? TooltipText:string.Empty)" IsContentDisabled="@PVIsDisabled"> *@
 		@if (IsMultiLine)
 		{
 			<Tooltip Text="@(ShowTooltip? TooltipText:string.Empty)">
@@ -25,7 +23,7 @@
 		}
 		else
 		{
-			<Tooltip Text="@(ShowTooltip? TooltipText:string.Empty)">
+			@* <Tooltip Text="@(ShowTooltip? TooltipText:string.Empty)"> *@
 				<div class="text-entry @Class" style="--text-input-width:@GetWidth(); --text-input-height:@GetHeight()">
 					<input class="text-input" type="text" disabled="@ShowTooltip" show-units="@GetShowUnits()" @bind="Text" @bind:event="oninput" @onkeydown="@OnKeyDownAsync" />
 					@if (GetShowUnits())
@@ -33,9 +31,9 @@
 						<span class="clf-units" disabled="@ShowUnits">@Units</span>
 					}
 				</div>
-			</Tooltip>
+			@* </Tooltip> *@
 		}
-	</Alarm>
+	@* </Alarm> *@
 }
 
 @code

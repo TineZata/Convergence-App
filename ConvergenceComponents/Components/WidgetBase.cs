@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using ConvergenceComponents.Components.Font;
+using Microsoft.AspNetCore.Components;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -6,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ConvergenceBlazorComponents
+namespace ConvergenceComponents
 {
     public class WidgetBase : ComponentBase
     {
@@ -24,7 +25,7 @@ namespace ConvergenceBlazorComponents
 
         [Obsolete]
         [Parameter]
-        public string FontStyle { get; set; } = Font.DefaultFonts.DEFAULT_FONT_STYLE;
+        public string FontStyle { get; set; } = DefaultFonts.DEFAULT_FONT_STYLE;
 
         [Parameter]
         public string TooltipText { get; set; } = string.Empty;

@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\ConvergenceBlazorComponents\ConvergenceBlazorComponents.csproj" />
+    <ProjectReference Include="..\..\ConvergenceComponents\ConvergenceComponents.csproj" />
     <ProjectReference Include="..\ConvergenceBlazorWeb.Client\ConvergenceBlazorWeb.Client.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.3" />
   </ItemGroup>

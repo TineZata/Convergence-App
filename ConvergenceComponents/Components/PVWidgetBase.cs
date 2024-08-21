@@ -1,6 +1,6 @@
 ﻿using Convergence;
 using Convergence.IO.EPICS.CA;
-using ConvergenceBlazorComponents.Styles;
+using ConvergenceComponents.Components.Styles;
 using Microsoft.AspNetCore.Components;
 using System;
 using System.Collections.Generic;
@@ -11,7 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using static System.Net.Mime.MediaTypeNames;
 
-namespace ConvergenceBlazorComponents
+namespace ConvergenceComponents
 {
     public class PVWidgetBase : WidgetBase
     {
