@@ -11,7 +11,7 @@
 
 @if (IsVisible)
 {
-	@* <Alarm BorderStatus="@PVBorderStatus" ContentDisabledTooltip="@(ShowTooltip? TooltipText:string.Empty)" IsContentDisabled="@PVIsDisabled"> *@
+	<Alarm BorderStatus="@PVBorderStatus" ContentDisabledTooltip="@(ShowTooltip? TooltipText:string.Empty)" IsContentDisabled="@PVIsDisabled">
 		@if (IsMultiLine)
 		{
 			<Tooltip Text="@(ShowTooltip? TooltipText:string.Empty)">
@@ -23,7 +23,7 @@
 		}
 		else
 		{
-			@* <Tooltip Text="@(ShowTooltip? TooltipText:string.Empty)"> *@
+			<Tooltip Text="@(ShowTooltip? TooltipText:string.Empty)">
 				<div class="text-entry @Class" style="--text-input-width:@GetWidth(); --text-input-height:@GetHeight()">
 					<input class="text-input" type="text" disabled="@ShowTooltip" show-units="@GetShowUnits()" @bind="Text" @bind:event="oninput" @onkeydown="@OnKeyDownAsync" />
 					@if (GetShowUnits())
@@ -31,9 +31,9 @@
 						<span class="clf-units" disabled="@ShowUnits">@Units</span>
 					}
 				</div>
-			@* </Tooltip> *@
+			</Tooltip>
 		}
-	@* </Alarm> *@
+	</Alarm>
 }
 
 @code
@@ -127,12 +127,6 @@
 		return Height != 0 ? $"{Height}px" : "var(--clf-text-entry-default-height)";
 	}
 
-
-	void IDisposable.Dispose()
-	{
-		Convergence.IO.EPICS.CA.Wrapper.Disconnect(PVName);
-	}
-
 	public async Task OnGetTextEntrySnapshot()
 	{
 		SyncContext?.Post(async _ =>
@@ -167,7 +161,7 @@
 		}
 	}
 
-	private void Dispose()
+	void IDisposable.Dispose()
 	{
 		Convergence.IO.EPICS.CA.Wrapper.Disconnect(PVName);
 		_connectCallbackEvent -= PVConnectionChanged;

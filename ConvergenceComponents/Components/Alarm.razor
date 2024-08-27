@@ -12,12 +12,12 @@
       </svg>
     </Tooltip>
   }
-    @* @if (BorderStatus != BorderStatus.Connected)
+    @if (BorderStatus != BorderStatus.Connected)
   {
     <Tooltip Text="@ContentDisabledTooltip">
       @GetContent()
     </Tooltip>
-  } *@
+  }
   else
   {
     @GetContent()
