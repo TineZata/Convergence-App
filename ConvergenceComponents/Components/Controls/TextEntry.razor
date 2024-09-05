@@ -54,19 +54,20 @@
 	public bool WaitForAcknowledgement { get; set; } = false;
 
 	private string _previousValue = "";
-	public Convergence.IO.EPICS.CA.EventCallbackDelegate.ConnectCallback? _connectCallbackEvent;
+	private Convergence.IO.EPICS.CA.EventCallbackDelegate.ConnectCallback? _connectCallbackEvent;
 	private Convergence.IO.EPICS.CA.EventCallbackDelegate.WriteCallback? _putCallbackEvent;
-	private event Func<Task> _asyncEventOccurred;
+	private event Func<Task>? _asyncEventOccurred;
 
 	public void OnConnectionChanged(Convergence.IO.EPICS.CA.ConnectionEventCallbackArgs args)
 	{
-		SyncContext?.Post(_ =>
+		SyncContext!.Post(_ =>
 		{
 			if (args.op == Convergence.IO.EPICS.CA.ConnectionEventCallbackArgs.CA_OP_CONN_UP)
 			{
 				PVBorderStatus = BorderStatus.Connected;
 				PVIsDisabled = false;
-				_asyncEventOccurred.Invoke();
+				// Seems like a call to this is causing the callback to not be called again. No execption is thrown. Not sure why.
+				// _asyncEventOccurred!.Invoke();
 			}
 			else
 			{
@@ -91,25 +92,24 @@
 	protected override async Task OnInitializedAsync()
 	{
 		await base.OnInitializedAsync();
+		SyncContext = SynchronizationContext.Current;
 		_connectCallbackEvent += OnConnectionChanged;
 		_putCallbackEvent += OnCaputCallback;
 		_asyncEventOccurred += OnGetTextEntrySnapshot;
-		SyncContext = SynchronizationContext.Current;
 		this.Width = this.Width == 0 ? TextEntryStyle.DEFAULT_WIDTH : this.Width;
 		this.Height = this.Height == 0 ? TextEntryStyle.DEFAULT_HEIGHT : this.Height;
 
 		if (PVName != string.Empty)
 		{
-			SyncContext?.Post(async _ =>
+			SyncContext!.Post(async _ =>
 			{
-				await Convergence.IO.EPICS.CA.Wrapper.ConnectAsync(PVName, PVDataType, PVElementCount, _connectCallbackEvent);
+				// Attempt a connection
+				await Convergence.IO.EPICS.CA.Wrapper.ConnectAsync(PVName, PVDataType, PVElementCount, _connectCallbackEvent!);
+				// Even if the result returns OK, we dont know if the connection was successful until we get 
+				// a callback which confirms the connection.
+				StateHasChanged();
 			}, null);
 		}
-		else
-		{
-			PVBorderStatus = BorderStatus.NotConnected;
-		}
-
 	}
 
 	private bool GetShowUnits()
@@ -129,43 +129,49 @@
 
 	public async Task OnGetTextEntrySnapshot()
 	{
-		SyncContext?.Post(async _ =>
+		await base.InvokeAsync(() =>
 		{
-			var rbv = await Convergence.IO.EPICS.CA.Wrapper.CagetAsync(PVName, typeof(string));
-			var value = rbv.Value as string;
-			if (value != null)
+			SyncContext!.Post(async _ =>
 			{
-				_previousValue = Text;
-				Text = value;
-				StateHasChanged();
-			}
-			else
-			{
-				Text = _previousValue;
-			}
-		}, null);
+				var rbv = await Convergence.IO.EPICS.CA.Wrapper.CagetAsync(PVName, typeof(string));
+				var value = rbv.Value as string;
+				if (value != null)
+				{
+					_previousValue = Text;
+					Text = value;
+					StateHasChanged();
+				}
+				else
+				{
+					Text = _previousValue;
+				}
+			}, null);
+		});
 	}
 
 	public async Task OnKeyDownAsync(KeyboardEventArgs e)
 	{
-		//only try to write to the PV if Connected and "Enter" key is pressed
-		if (PVBorderStatus == BorderStatus.Connected && (e.Code == "Enter" || e.Code == "NumpadEnter"))
+		await base.InvokeAsync(() =>
 		{
-			SyncContext?.Post(async _ =>
+			//only try to write to the PV if Connected and "Enter" key is pressed
+			if (PVBorderStatus == BorderStatus.Connected && (e.Code == "Enter" || e.Code == "NumpadEnter"))
 			{
-				// Do CaPutAsync with a callback to update the value
-				await Convergence.IO.EPICS.CA.Wrapper.CaputAsync(PVName, Text, typeof(string));
-				StateHasChanged();
+				SyncContext!.Post(async _ =>
+				{
+					// Do CaPutAsync with a callback to update the value
+					await Convergence.IO.EPICS.CA.Wrapper.CaputAsync(PVName, Text, typeof(string));
+					StateHasChanged();
 
-			}, null);
-		}
+				}, null);
+			}
+		});
 	}
 
 	void IDisposable.Dispose()
 	{
 		Convergence.IO.EPICS.CA.Wrapper.Disconnect(PVName);
-		_connectCallbackEvent -= PVConnectionChanged;
-		_putCallbackEvent -= OnCaputCallback;
-		_asyncEventOccurred -= OnGetTextEntrySnapshot;
+		if (_connectCallbackEvent != null) _connectCallbackEvent -= OnConnectionChanged;
+		if (_putCallbackEvent != null) _putCallbackEvent -= OnCaputCallback;
+		if (_asyncEventOccurred != null) _asyncEventOccurred -= OnGetTextEntrySnapshot;
 	}
 }

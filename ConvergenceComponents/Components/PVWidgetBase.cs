@@ -26,41 +26,8 @@ namespace ConvergenceComponents
         [Parameter]
         public BorderStatus PVBorderStatus { get; set; } = BorderStatus.NotConnected;
 
-        private Convergence.IO.EPICS.CA.ConnectionEventCallbackArgs _callbackArgs;
 		public SynchronizationContext? SyncContext { get; set; }
 
-		public void PVConnectionChanged(Convergence.IO.EPICS.CA.ConnectionEventCallbackArgs args)
-		{
-			SyncContext?.Post(_ =>
-            {
-                _callbackArgs = args;
-                if (args.op == Convergence.IO.EPICS.CA.ConnectionEventCallbackArgs.CA_OP_CONN_UP)
-                {
-                    PVBorderStatus = BorderStatus.Connected;
-                    PVIsDisabled = false;
-                }
-                else
-                {
-                    PVBorderStatus = BorderStatus.NotConnected;
-                    PVIsDisabled = true;
-                }
-                StateHasChanged();
-            }, null);
-		}
-
-		//public bool PVGetDisableStatus()
-		//{
-		//	return GetBorderStatusDisable(PVBorderStatus) || PVIsDisabled;
-		//}
-
-		public async Task<EndPointStatus> TaskConnect()
-        {
-            await Wrapper.ConnectAsync(PVName, PVDataType, PVElementCount, PVConnectionChanged);
-            if (_callbackArgs.op == Convergence.IO.EPICS.CA.ConnectionEventCallbackArgs.CA_OP_CONN_UP)
-                return EndPointStatus.Okay;
-            else
-                return EndPointStatus.Disconnected;
-        }
 
         /// <summary>
         /// Simply connects to the PV and reads the precision value.
