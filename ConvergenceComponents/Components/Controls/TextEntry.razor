@@ -60,14 +60,13 @@
 
 	public void OnConnectionChanged(Convergence.IO.EPICS.CA.ConnectionEventCallbackArgs args)
 	{
-		SyncContext!.Post(_ =>
+		SyncContext!.Post(async _ =>
 		{
 			if (args.op == Convergence.IO.EPICS.CA.ConnectionEventCallbackArgs.CA_OP_CONN_UP)
 			{
 				PVBorderStatus = BorderStatus.Connected;
 				PVIsDisabled = false;
-				// Seems like a call to this is causing the callback to not be called again. No execption is thrown. Not sure why.
-				// _asyncEventOccurred!.Invoke();
+				await _asyncEventOccurred!.Invoke();
 			}
 			else
 			{
@@ -134,12 +133,13 @@
 			SyncContext!.Post(async _ =>
 			{
 				var rbv = await Convergence.IO.EPICS.CA.Wrapper.CagetAsync(PVName, typeof(string));
+				await Task.Delay(Convergence.IO.EPICS.CA.ConvergeOnEPICSChannelAccess.EPICS_TIMEOUT_MSEC);
 				var value = rbv.Value as string;
 				if (value != null)
 				{
 					_previousValue = Text;
 					Text = value;
-					StateHasChanged();
+					//StateHasChanged();
 				}
 				else
 				{
@@ -159,7 +159,8 @@
 				SyncContext!.Post(async _ =>
 				{
 					// Do CaPutAsync with a callback to update the value
-					await Convergence.IO.EPICS.CA.Wrapper.CaputAsync(PVName, Text, typeof(string));
+					await Convergence.IO.EPICS.CA.Wrapper.CaputAsync(PVName, Text, typeof(string), 1, _putCallbackEvent);
+					await Task.Delay(Convergence.IO.EPICS.CA.ConvergeOnEPICSChannelAccess.EPICS_TIMEOUT_MSEC);
 					StateHasChanged();
 
 				}, null);
@@ -170,6 +171,7 @@
 	void IDisposable.Dispose()
 	{
 		Convergence.IO.EPICS.CA.Wrapper.Disconnect(PVName);
+		if (SyncContext != null) SyncContext = null;
 		if (_connectCallbackEvent != null) _connectCallbackEvent -= OnConnectionChanged;
 		if (_putCallbackEvent != null) _putCallbackEvent -= OnCaputCallback;
 		if (_asyncEventOccurred != null) _asyncEventOccurred -= OnGetTextEntrySnapshot;
