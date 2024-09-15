@@ -54,9 +54,9 @@
 	public bool WaitForAcknowledgement { get; set; } = false;
 
 	private string _previousValue = "";
-	private Convergence.IO.EPICS.CA.EventCallbackDelegate.ConnectCallback? _connectCallbackEvent;
-	private Convergence.IO.EPICS.CA.EventCallbackDelegate.WriteCallback? _putCallbackEvent;
-	private event Func<Task>? _asyncEventOccurred;
+	private static Convergence.IO.EPICS.CA.EventCallbackDelegate.ConnectCallback? _connectCallbackEvent;
+	private static Convergence.IO.EPICS.CA.EventCallbackDelegate.WriteCallback? _putCallbackEvent;
+	private static event Func<Task>? _asyncEventOccurred;
 
 	public void OnConnectionChanged(Convergence.IO.EPICS.CA.ConnectionEventCallbackArgs args)
 	{
@@ -82,10 +82,10 @@
 		// This should confirm is the PV was written to successfully
 		string result = (string)Convergence.IO.EPICS.CA.Helpers.DecodeEventData(args);
 		// If the PV was not written to successfully, revert the previous value
-		// if (Text != result)
-		// 	Text = _previousValue;
-		// else
-		// 	_previousValue = Text;
+		if (Text != result)
+			Text = _previousValue;
+		else
+			_previousValue = Text;
 	}
 
 	protected override async Task OnInitializedAsync()
@@ -103,12 +103,12 @@
 			SyncContext!.Post(async _ =>
 			{
 				// Attempt a connection
-				await Convergence.IO.EPICS.CA.Wrapper.ConnectAsync(PVName, PVDataType, PVElementCount, _connectCallbackEvent!);
-				// Even if the result returns OK, we dont know if the connection was successful until we get 
+				// Even if the result returns OK, we dont know if the connection was successful until we get
 				// a callback which confirms the connection.
-				StateHasChanged();
+				await Convergence.IO.EPICS.CA.Wrapper.ConnectAsync(PVName, PVDataType, PVElementCount, _connectCallbackEvent!);
 			}, null);
 		}
+		StateHasChanged();
 	}
 
 	private bool GetShowUnits()
@@ -133,13 +133,12 @@
 			SyncContext!.Post(async _ =>
 			{
 				var rbv = await Convergence.IO.EPICS.CA.Wrapper.CagetAsync(PVName, typeof(string));
-				await Task.Delay(Convergence.IO.EPICS.CA.ConvergeOnEPICSChannelAccess.EPICS_TIMEOUT_MSEC);
 				var value = rbv.Value as string;
 				if (value != null)
 				{
 					_previousValue = Text;
 					Text = value;
-					//StateHasChanged();
+					StateHasChanged();
 				}
 				else
 				{
@@ -160,7 +159,6 @@
 				{
 					// Do CaPutAsync with a callback to update the value
 					await Convergence.IO.EPICS.CA.Wrapper.CaputAsync(PVName, Text, typeof(string), 1, _putCallbackEvent);
-					await Task.Delay(Convergence.IO.EPICS.CA.ConvergeOnEPICSChannelAccess.EPICS_TIMEOUT_MSEC);
 					StateHasChanged();
 
 				}, null);
@@ -170,7 +168,7 @@
 
 	void IDisposable.Dispose()
 	{
-		Convergence.IO.EPICS.CA.Wrapper.Disconnect(PVName);
+		Convergence.IO.EPICS.CA.Wrapper.Disconnect(PVName);	
 		if (SyncContext != null) SyncContext = null;
 		if (_connectCallbackEvent != null) _connectCallbackEvent -= OnConnectionChanged;
 		if (_putCallbackEvent != null) _putCallbackEvent -= OnCaputCallback;
