@@ -6,7 +6,7 @@
 @using System.Threading
 @using CaputCallback = Convergence.IO.EPICS.CA.EventCallbackDelegate.WriteCallback
 @inherits PVWidgetBase
-@implements IDisposable
+@implements IAsyncDisposable
 
 
 @if (IsVisible)
@@ -38,24 +38,23 @@
 
 @code
 {
-	[Parameter]
-	public string Text { get; set; } = string.Empty;
-	[Parameter]
-	public string Units { get; set; } = string.Empty;
-	[Parameter]
-	public bool ShowUnits { get; set; } = false;
-	[Parameter]
-	public bool IsMultiLine { get; set; } = false;
-	[Parameter]
-	public int Precision { get; set; } = -1;
-	[Parameter]
-	public bool IsDisabledOnEnter { get; set; } = false;
-	[Parameter]
-	public bool WaitForAcknowledgement { get; set; } = false;
+		[Parameter]
+		public string Text { get; set; } = string.Empty;
+		[Parameter]
+		public string Units { get; set; } = string.Empty;
+		[Parameter]
+		public bool ShowUnits { get; set; } = false;
+		[Parameter]
+		public bool IsMultiLine { get; set; } = false;
+		[Parameter]
+		public int Precision { get; set; } = -1;
+		[Parameter]
+		public bool IsDisabledOnEnter { get; set; } = false;
+		[Parameter]
+		public bool WaitForAcknowledgement { get; set; } = false;
 
 	private string _previousValue = "";
 	private static Convergence.IO.EPICS.CA.EventCallbackDelegate.ConnectCallback? _connectCallbackEvent;
-	private static Convergence.IO.EPICS.CA.EventCallbackDelegate.WriteCallback? _putCallbackEvent;
 	private static event Func<Task>? _asyncEventOccurred;
 
 	public void OnConnectionChanged(Convergence.IO.EPICS.CA.ConnectionEventCallbackArgs args)
@@ -77,23 +76,11 @@
 		}, null);
 	}
 
-	private void OnCaputCallback(Convergence.IO.EPICS.CA.EventCallbackArgs args)
-	{
-		// This should confirm is the PV was written to successfully
-		string result = (string)Convergence.IO.EPICS.CA.Helpers.DecodeEventData(args);
-		// If the PV was not written to successfully, revert the previous value
-		if (Text != result)
-			Text = _previousValue;
-		else
-			_previousValue = Text;
-	}
-
 	protected override async Task OnInitializedAsync()
 	{
 		await base.OnInitializedAsync();
 		SyncContext = SynchronizationContext.Current;
 		_connectCallbackEvent += OnConnectionChanged;
-		_putCallbackEvent += OnCaputCallback;
 		_asyncEventOccurred += OnGetTextEntrySnapshot;
 		this.Width = this.Width == 0 ? TextEntryStyle.DEFAULT_WIDTH : this.Width;
 		this.Height = this.Height == 0 ? TextEntryStyle.DEFAULT_HEIGHT : this.Height;
@@ -106,9 +93,9 @@
 				// Even if the result returns OK, we dont know if the connection was successful until we get
 				// a callback which confirms the connection.
 				await Convergence.IO.EPICS.CA.Wrapper.ConnectAsync(PVName, PVDataType, PVElementCount, _connectCallbackEvent!);
+				StateHasChanged();
 			}, null);
 		}
-		StateHasChanged();
 	}
 
 	private bool GetShowUnits()
@@ -158,7 +145,7 @@
 				SyncContext!.Post(async _ =>
 				{
 					// Do CaPutAsync with a callback to update the value
-					await Convergence.IO.EPICS.CA.Wrapper.CaputAsync(PVName, Text, typeof(string), 1, _putCallbackEvent);
+					await Convergence.IO.EPICS.CA.Wrapper.CaputAsync(PVName, Text, typeof(string));
 					StateHasChanged();
 
 				}, null);
@@ -166,12 +153,36 @@
 		});
 	}
 
-	void IDisposable.Dispose()
+	public async ValueTask DisposeAsync()
 	{
-		Convergence.IO.EPICS.CA.Wrapper.Disconnect(PVName);	
-		if (SyncContext != null) SyncContext = null;
-		if (_connectCallbackEvent != null) _connectCallbackEvent -= OnConnectionChanged;
-		if (_putCallbackEvent != null) _putCallbackEvent -= OnCaputCallback;
-		if (_asyncEventOccurred != null) _asyncEventOccurred -= OnGetTextEntrySnapshot;
+		try
+		{
+			using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(Convergence.IO.EPICS.CA.ConvergeOnEPICSChannelAccess.EPICS_TIMEOUT_SEC)); // 10-second timeout
+
+			bool disconnected = await Convergence.IO.EPICS.CA.Wrapper.DisconnectAsync(PVName)
+				.WaitAsync(cts.Token);
+
+			if (disconnected)
+			{
+				SyncContext = null;
+				if (_connectCallbackEvent != null) _connectCallbackEvent -= OnConnectionChanged;
+				if (_asyncEventOccurred != null) _asyncEventOccurred -= OnGetTextEntrySnapshot;
+			}
+			else
+			{
+				// Log or handle unsuccessful disconnection
+				Console.WriteLine($"Failed to disconnect from {PVName} within the timeout period.");
+			}
+		}
+		catch (OperationCanceledException)
+		{
+			// Handle timeout
+			Console.WriteLine($"Disconnect operation for {PVName} timed out.");
+		}
+		catch (Exception ex)
+		{
+			// Handle other exceptions
+			Console.WriteLine($"Error during disconnect: {ex.Message}");
+		}
 	}
 }
