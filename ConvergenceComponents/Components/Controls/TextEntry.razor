@@ -38,20 +38,20 @@
 
 @code
 {
-		[Parameter]
-		public string Text { get; set; } = string.Empty;
-		[Parameter]
-		public string Units { get; set; } = string.Empty;
-		[Parameter]
-		public bool ShowUnits { get; set; } = false;
-		[Parameter]
-		public bool IsMultiLine { get; set; } = false;
-		[Parameter]
-		public int Precision { get; set; } = -1;
-		[Parameter]
-		public bool IsDisabledOnEnter { get; set; } = false;
-		[Parameter]
-		public bool WaitForAcknowledgement { get; set; } = false;
+	[Parameter]
+	public string Text { get; set; } = string.Empty;
+	[Parameter]
+	public string Units { get; set; } = string.Empty;
+	[Parameter]
+	public bool ShowUnits { get; set; } = false;
+	[Parameter]
+	public bool IsMultiLine { get; set; } = false;
+	[Parameter]
+	public int Precision { get; set; } = -1;
+	[Parameter]
+	public bool IsDisabledOnEnter { get; set; } = false;
+	[Parameter]
+	public bool WaitForAcknowledgement { get; set; } = false;
 
 	private string _previousValue = "";
 	private static Convergence.IO.EPICS.CA.EventCallbackDelegate.ConnectCallback? _connectCallbackEvent;
@@ -159,8 +159,7 @@
 		{
 			using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(Convergence.IO.EPICS.CA.ConvergeOnEPICSChannelAccess.EPICS_TIMEOUT_SEC)); // 10-second timeout
 
-			bool disconnected = await Convergence.IO.EPICS.CA.Wrapper.DisconnectAsync(PVName)
-				.WaitAsync(cts.Token);
+			bool disconnected = await Convergence.IO.EPICS.CA.Wrapper.DisconnectAsync(PVName).WaitAsync(cts.Token);
 
 			if (disconnected)
 			{
