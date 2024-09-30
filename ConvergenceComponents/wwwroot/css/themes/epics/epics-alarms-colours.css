@@ -1,0 +1,6 @@
+﻿:root {
+    --epics-alarm-not-connected-colour: #FA00FA;
+    --epics-alarm-major-colour: #DE3730;
+    --epics-alarm-minor-colour: #FF9E1B;
+    --epics-alarm-invalid-colour: #A5A5A5;
+}

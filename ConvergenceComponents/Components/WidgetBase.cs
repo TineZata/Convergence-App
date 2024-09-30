@@ -23,10 +23,6 @@ namespace ConvergenceComponents
         [Parameter]
         public int Height { get; set; }
 
-        [Obsolete]
-        [Parameter]
-        public string FontStyle { get; set; } = DefaultFonts.DEFAULT_FONT_STYLE;
-
         [Parameter]
         public string TooltipText { get; set; } = string.Empty;
         [Parameter]

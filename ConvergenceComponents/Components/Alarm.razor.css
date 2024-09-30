@@ -1,21 +1,20 @@
 ﻿.alarm-main {
-  position: relative;
-  outline: var(--clf-alarm-outline);
-  outline-offset: var(--clf-alarm-outline-offset);
-  border-radius: var(--clf-border-radius);
-  width: fit-content;
-  height: fit-content;
-  margin: var(--clf-alarm-margin);
+    position: relative;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    border-radius: var(--clf-border-radius);
+    width: fit-content;
+    height: fit-content;
+    margin: 12px 6px 6px 12px;
 }
 
 .alarm-content {
-  display: flex;
+    display: flex;
 }
 
 ::deep .alarm-icon {
-  position: absolute;
-  z-index: 999;
-  top: -15px;
-  left: -15px;
+    position: absolute;
+    z-index: 999;
+    top: -15px;
+    left: -15px;
 }
-
