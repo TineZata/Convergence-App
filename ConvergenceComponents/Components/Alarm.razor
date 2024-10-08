@@ -1,16 +1,16 @@
 ﻿@using ConvergenceComponents.Components.Styles
 @inherits WidgetBase
 
-<div class="alarm-main @Class" style="outline-color:@GetAlarmColour(BorderStatus);">
-	@if (BorderStatus != BorderStatus.Connected)
+<div class="alarm-main @Class" style="outline-color:@GetAlarmColour(BorderStat);">
+	@if (BorderStat != BorderStatus.Connected)
 	{
 		<Tooltip Text="@AlarmIconTooltipText">
 			<svg class="clf-icon alarm-icon @IconClass">
-				<use href="_content/ConvergenceComponents/icons/multi_colour/symbol-defs.svg#@GetAlarmIconId(BorderStatus)" />
+				<use href="_content/ConvergenceComponents/icons/multi_colour/symbol-defs.svg#@GetAlarmIconId(BorderStat)" />
 			</svg>
 		</Tooltip>
 	}
-	@if (BorderStatus != BorderStatus.Connected)
+	@if (BorderStat != BorderStatus.Connected)
 	{
 		<Tooltip Text="@ContentDisabledTooltip">
 			@GetContent()
@@ -32,7 +32,7 @@
 	public RenderFragment? ChildContent { get; set; }
 
 	[Parameter]
-	public BorderStatus BorderStatus { get; set; } = BorderStatus.NotConnected;
+	public BorderStatus BorderStat { get; set; } = BorderStatus.NotConnected;
 
 	[Parameter]
 	public string? ContentDisabledTooltip { get; set; }
@@ -44,7 +44,7 @@
 	{
 		get
 		{
-			switch (this.BorderStatus)
+			switch (this.BorderStat)
 			{
 				case BorderStatus.NotConnected:
 					return "Not Connected";

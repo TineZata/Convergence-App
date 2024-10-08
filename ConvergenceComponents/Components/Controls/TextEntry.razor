@@ -5,13 +5,13 @@
 @using System.Runtime.InteropServices
 @using System.Threading
 @using CaputCallback = Convergence.IO.EPICS.CA.EventCallbackDelegate.WriteCallback
-@inherits PVWidgetBase
+@inherits WidgetBase
 @implements IAsyncDisposable
 
 
 @if (IsVisible)
 {
-	<Alarm BorderStatus="@PVBorderStatus" ContentDisabledTooltip="@(ShowTooltip? TooltipText:string.Empty)" IsContentDisabled="@PVIsDisabled">
+	<Alarm BorderStat="@BorderStatus" ContentDisabledTooltip="@(ShowTooltip? TooltipText:string.Empty)" IsContentDisabled="@IsDisabled">
 		@if (IsMultiLine)
 		{
 			<Tooltip Text="@(ShowTooltip? TooltipText:string.Empty)">
@@ -55,23 +55,61 @@
 
 	private string _previousValue = "";
 	private static Convergence.IO.EPICS.CA.EventCallbackDelegate.ConnectCallback? _connectCallbackEvent;
-	private static event Func<Task>? _asyncEventOccurred;
+	private static Convergence.IO.EPICS.CA.EventCallbackDelegate.ReadCallback? _readCallbackEvent;
+	private static Convergence.IO.EPICS.CA.EventCallbackDelegate.ReadCtrlLongCallback? _ctrlLongCallbackEvent;
+	//private static event Func<Task>? _connectionChangeEventOccurred;
 
 	public void OnConnectionChanged(Convergence.IO.EPICS.CA.ConnectionEventCallbackArgs args)
 	{
-		SyncContext!.Post(async _ =>
+		SyncContext!.Post( async _ =>
 		{
 			if (args.op == Convergence.IO.EPICS.CA.ConnectionEventCallbackArgs.CA_OP_CONN_UP)
 			{
-				PVBorderStatus = BorderStatus.Connected;
-				PVIsDisabled = false;
-				await _asyncEventOccurred!.Invoke();
+				BorderStatus = BorderStatus.Connected;
+				IsDisabled = false;
+				if (ShowUnits && DataType == typeof(long))
+				{
+					await Convergence.IO.EPICS.CA.Wrapper.CagetControlLongMetaDataAsyncInt(Name, DataType, _ctrlLongCallbackEvent);
+				}
+				else if (DataType == typeof(string))
+				{
+					await Convergence.IO.EPICS.CA.Wrapper.CagetAsync(Name, typeof(string), ElementCount, _readCallbackEvent);
+				}
 			}
 			else
 			{
-				PVBorderStatus = BorderStatus.NotConnected;
-				PVIsDisabled = true;
+				BorderStatus = BorderStatus.NotConnected;
+				IsDisabled = true;
 			}
+			StateHasChanged();
+		}, null);
+	}
+
+	public void OnReadEventOccurred(Convergence.IO.EPICS.CA.EventCallbackArgs args)
+	{
+		SyncContext!.Post(_ =>
+		{
+			Console.WriteLine($"Read event occurred for {Name}");
+			var value = Convergence.IO.EPICS.CA.Helpers.DecodeEventData(args) as string;
+			if (value != null)
+			{
+				_previousValue = Text;
+				Text = value;
+			}
+			else
+			{
+				Text = _previousValue;
+			}
+			StateHasChanged();
+		}, null);
+	}
+
+	public void OnControlLongMetaDataEventOccurred(Convergence.IO.EPICS.CA.DBR_CTRL_LONG args)
+	{
+		SyncContext!.Post(_ =>
+		{
+			Console.WriteLine($"Read event occurred for {Name}");
+			Units = new string(args.units).TrimEnd('\0');
 			StateHasChanged();
 		}, null);
 	}
@@ -81,18 +119,48 @@
 		await base.OnInitializedAsync();
 		SyncContext = SynchronizationContext.Current;
 		_connectCallbackEvent += OnConnectionChanged;
-		_asyncEventOccurred += OnGetTextEntrySnapshot;
+		_readCallbackEvent += OnReadEventOccurred;
+		_ctrlLongCallbackEvent += OnControlLongMetaDataEventOccurred;
+		//_connectionChangeEventOccurred += OnConnectionEventOccurred;
+		
 		this.Width = this.Width == 0 ? TextEntryStyle.DEFAULT_WIDTH : this.Width;
 		this.Height = this.Height == 0 ? TextEntryStyle.DEFAULT_HEIGHT : this.Height;
 
-		if (PVName != string.Empty)
+		if (Name != string.Empty)
 		{
 			SyncContext!.Post(async _ =>
 			{
 				// Attempt a connection
 				// Even if the result returns OK, we dont know if the connection was successful until we get
 				// a callback which confirms the connection.
-				await Convergence.IO.EPICS.CA.Wrapper.ConnectAsync(PVName, PVDataType, PVElementCount, _connectCallbackEvent!);
+				var connectionResult = await Convergence.IO.EPICS.CA.Wrapper.ConnectAsync(Name, DataType, ElementCount, _connectCallbackEvent!);
+				if (connectionResult == EndPointStatus.Okay)
+				{
+					Console.WriteLine($"Connected to {Name}");
+					//await Task.Delay(100);
+				}
+				else
+				{
+					Console.WriteLine($"Failed to connect to {Name}");
+				}
+				// if (ShowUnits && DataType != typeof(string))
+				// {
+				// 	var meta = await Convergence.IO.EPICS.CA.Wrapper.CagetControlDataAsyncInt(Name);
+				// 	Units = $"{meta.units[0]}{meta.units[1]}{meta.units[2]}{meta.units[3]}{meta.units[4]}{meta.units[5]}{meta.units[6]}{meta.units[7]}";
+				// 	Console.WriteLine($"Units: {meta.units[0]}{meta.units[1]}{meta.units[2]}{meta.units[3]}{meta.units[4]}");
+				// }
+				// else
+				// {
+				// 	var getResult = await Convergence.IO.EPICS.CA.Wrapper.CagetAsync(Name, typeof(string), ElementCount, _readCallbackEvent);
+				// 	if (getResult == EndPointStatus.Okay)
+				// 	{
+				// 		Console.WriteLine($"Read from {Name}");
+				// 	}
+				// 	else
+				// 	{
+				// 		Console.WriteLine($"Failed to read from {Name}");
+				// 	}
+				// }
 				StateHasChanged();
 			}, null);
 		}
@@ -113,39 +181,46 @@
 		return Height != 0 ? $"{Height}px" : "var(--clf-text-entry-default-height)";
 	}
 
-	public async Task OnGetTextEntrySnapshot()
-	{
-		await base.InvokeAsync(() =>
-		{
-			SyncContext!.Post(async _ =>
-			{
-				var rbv = await Convergence.IO.EPICS.CA.Wrapper.CagetAsync(PVName, typeof(string));
-				var value = rbv.Value as string;
-				if (value != null)
-				{
-					_previousValue = Text;
-					Text = value;
-					StateHasChanged();
-				}
-				else
-				{
-					Text = _previousValue;
-				}
-			}, null);
-		});
-	}
+	// public async Task OnConnectionEventOccurred()
+	// {
+	// 	await base.InvokeAsync(() =>
+	// 	{
+	// 		SyncContext!.Post(async _ =>
+	// 		{
+	// 			if (ShowUnits && DataType == typeof(long))
+	// 			{
+	// 				await Convergence.IO.EPICS.CA.Wrapper.CagetControlLongMetaDataAsyncInt(Name, DataType, _ctrlLongCallbackEvent);
+	// 				//Units = $"{meta.units[0]}{meta.units[1]}{meta.units[2]}{meta.units[3]}{meta.units[4]}{meta.units[5]}{meta.units[6]}{meta.units[7]}";
+	// 				//Console.WriteLine($"Units: {meta.units[0]}{meta.units[1]}{meta.units[2]}{meta.units[3]}{meta.units[4]}");
+	// 			}
+	// 			else
+	// 			{
+	// 				var getResult = await Convergence.IO.EPICS.CA.Wrapper.CagetAsync(Name, typeof(string), ElementCount, _readCallbackEvent);
+	// 				if (getResult == EndPointStatus.Okay)
+	// 				{
+	// 					Console.WriteLine($"Read from {Name}");
+	// 				}
+	// 				else
+	// 				{
+	// 					Console.WriteLine($"Failed to read from {Name}");
+	// 				}
+	// 			}
+	// 			StateHasChanged();
+	// 		}, null);
+	// 	});
+	// }
 
 	public async Task OnKeyDownAsync(KeyboardEventArgs e)
 	{
 		await base.InvokeAsync(() =>
 		{
 			//only try to write to the PV if Connected and "Enter" key is pressed
-			if (PVBorderStatus == BorderStatus.Connected && (e.Code == "Enter" || e.Code == "NumpadEnter"))
+			if (BorderStatus == BorderStatus.Connected && (e.Code == "Enter" || e.Code == "NumpadEnter"))
 			{
 				SyncContext!.Post(async _ =>
 				{
 					// Do CaPutAsync with a callback to update the value
-					await Convergence.IO.EPICS.CA.Wrapper.CaputAsync(PVName, Text, typeof(string));
+					await Convergence.IO.EPICS.CA.Wrapper.CaputAsync(Name, Text, typeof(string));
 					StateHasChanged();
 
 				}, null);
@@ -159,24 +234,18 @@
 		{
 			using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(Convergence.IO.EPICS.CA.ConvergeOnEPICSChannelAccess.EPICS_TIMEOUT_SEC)); // 10-second timeout
 
-			bool disconnected = await Convergence.IO.EPICS.CA.Wrapper.DisconnectAsync(PVName).WaitAsync(cts.Token);
-
-			if (disconnected)
-			{
-				SyncContext = null;
-				if (_connectCallbackEvent != null) _connectCallbackEvent -= OnConnectionChanged;
-				if (_asyncEventOccurred != null) _asyncEventOccurred -= OnGetTextEntrySnapshot;
-			}
-			else
-			{
-				// Log or handle unsuccessful disconnection
-				Console.WriteLine($"Failed to disconnect from {PVName} within the timeout period.");
-			}
+			bool disconnected = await Convergence.IO.EPICS.CA.Wrapper.DisconnectAsync(Name).WaitAsync(cts.Token);
+			//if (ShowUnits) await Convergence.IO.EPICS.CA.Wrapper.DisconnectAsync(PVName+".EGU").WaitAsync(cts.Token);
+			if (SyncContext != null) SyncContext = null;
+			if (_connectCallbackEvent != null) _connectCallbackEvent -= OnConnectionChanged;
+			// if (_connectionChangeEventOccurred != null) _connectionChangeEventOccurred -= OnConnectionEventOccurred;
+			if (_readCallbackEvent != null) _readCallbackEvent -= OnReadEventOccurred;
+			if (_ctrlLongCallbackEvent != null) _ctrlLongCallbackEvent -= OnControlLongMetaDataEventOccurred;
 		}
 		catch (OperationCanceledException)
 		{
 			// Handle timeout
-			Console.WriteLine($"Disconnect operation for {PVName} timed out.");
+			Console.WriteLine($"Disconnect operation for {Name} timed out.");
 		}
 		catch (Exception ex)
 		{

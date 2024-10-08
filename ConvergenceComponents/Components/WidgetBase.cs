@@ -1,4 +1,7 @@
-﻿using ConvergenceComponents.Components.Font;
+﻿using Convergence.IO.EPICS.CA;
+using Convergence;
+using ConvergenceComponents.Components.Font;
+using ConvergenceComponents.Components.Styles;
 using Microsoft.AspNetCore.Components;
 using System;
 using System.Collections.Generic;
@@ -27,5 +30,19 @@ namespace ConvergenceComponents
         public string TooltipText { get; set; } = string.Empty;
         [Parameter]
         public bool ShowTooltip { get; set; } = false;
-    }
+		[Parameter]
+		public string Name { get; set; } = string.Empty;
+		[Parameter]
+		public Protocols Protocol { get; set; } = Protocols.None;
+		[Parameter]
+		public Type DataType { get; set; } = typeof(string);
+		[Parameter]
+		public int ElementCount { get; set; } = 1;
+		[Parameter]
+		public bool IsDisabled { get; set; } = true;
+		[Parameter]
+		public BorderStatus BorderStatus { get; set; } = BorderStatus.NotConnected;
+
+		protected SynchronizationContext? SyncContext { get; set; }
+	}
 }
