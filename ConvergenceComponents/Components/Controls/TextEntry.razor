@@ -56,7 +56,7 @@
 	private string _previousValue = "";
 	private static Convergence.IO.EPICS.CA.EventCallbackDelegate.ConnectCallback? _connectCallbackEvent;
 	private static Convergence.IO.EPICS.CA.EventCallbackDelegate.ReadCallback? _readCallbackEvent;
-	private static Convergence.IO.EPICS.CA.EventCallbackDelegate.ReadCtrlLongCallback? _ctrlLongCallbackEvent;
+	//private static Convergence.IO.EPICS.CA.EventCallbackDelegate.ReadCtrlMetaCallback? _ctrlLongCallbackEvent;
 	//private static event Func<Task>? _connectionChangeEventOccurred;
 
 	public void OnConnectionChanged(Convergence.IO.EPICS.CA.ConnectionEventCallbackArgs args)
@@ -65,11 +65,21 @@
 		{
 			if (args.op == Convergence.IO.EPICS.CA.ConnectionEventCallbackArgs.CA_OP_CONN_UP)
 			{
+				nint pData = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(Convergence.IO.EPICS.CA.DBR_CTRL_LONG)));
+				var status = await Convergence.IO.EPICS.CA.Wrapper.CagetControlMetaDataAsync(Name, DataType, pData);
 				BorderStatus = BorderStatus.Connected;
 				IsDisabled = false;
-				if (ShowUnits && DataType == typeof(long))
+				if (status == EndPointStatus.Okay)
 				{
-					await Convergence.IO.EPICS.CA.Wrapper.CagetControlLongMetaDataAsyncInt(Name, DataType, _ctrlLongCallbackEvent);
+					var meta = Marshal.PtrToStructure<Convergence.IO.EPICS.CA.DBR_CTRL_LONG>(pData);
+					Text = meta.value.ToString();
+					if (ShowUnits && DataType == typeof(long))
+						Units = new string(meta.units).TrimEnd('\0');
+					else
+					{
+						Console.WriteLine($"Failed to get control metadata for {Name} with {status}");
+					}
+					Marshal.FreeHGlobal(pData);
 				}
 				else if (DataType == typeof(string))
 				{
@@ -104,15 +114,16 @@
 		}, null);
 	}
 
-	public void OnControlLongMetaDataEventOccurred(Convergence.IO.EPICS.CA.DBR_CTRL_LONG args)
-	{
-		SyncContext!.Post(_ =>
-		{
-			Console.WriteLine($"Read event occurred for {Name}");
-			Units = new string(args.units).TrimEnd('\0');
-			StateHasChanged();
-		}, null);
-	}
+	// public void OnControlLongMetaDataEventOccurred(nint pData)
+	// {
+	// 	SyncContext!.Post(_ =>
+	// 	{
+	// 		var data = Marshal.PtrToStructure<Convergence.IO.EPICS.CA.DBR_CTRL_LONG>(pData);
+	// 		Console.WriteLine($"Read event occurred for {Name}");
+	// 		//Units = new string(data.units).TrimEnd('\0');
+	// 		StateHasChanged();
+	// 	}, null);
+	// }
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -120,7 +131,7 @@
 		SyncContext = SynchronizationContext.Current;
 		_connectCallbackEvent += OnConnectionChanged;
 		_readCallbackEvent += OnReadEventOccurred;
-		_ctrlLongCallbackEvent += OnControlLongMetaDataEventOccurred;
+		// _ctrlLongCallbackEvent += OnControlLongMetaDataEventOccurred;
 		//_connectionChangeEventOccurred += OnConnectionEventOccurred;
 		
 		this.Width = this.Width == 0 ? TextEntryStyle.DEFAULT_WIDTH : this.Width;
@@ -240,7 +251,7 @@
 			if (_connectCallbackEvent != null) _connectCallbackEvent -= OnConnectionChanged;
 			// if (_connectionChangeEventOccurred != null) _connectionChangeEventOccurred -= OnConnectionEventOccurred;
 			if (_readCallbackEvent != null) _readCallbackEvent -= OnReadEventOccurred;
-			if (_ctrlLongCallbackEvent != null) _ctrlLongCallbackEvent -= OnControlLongMetaDataEventOccurred;
+			// if (_ctrlLongCallbackEvent != null) _ctrlLongCallbackEvent -= OnControlLongMetaDataEventOccurred;
 		}
 		catch (OperationCanceledException)
 		{
